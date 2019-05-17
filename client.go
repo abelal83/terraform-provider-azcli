@@ -1,12 +1,11 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os/exec"
-	"strconv"
+
+	"github.com/tidwall/gjson"
 )
 
 // Client comment
@@ -19,40 +18,25 @@ type account struct {
 	Name  string `json:"name"`
 }
 
-// NewClient returns a new PowerDNS client
+// NewClient AZ Client
 func NewClient(cosmosAccountName string) *Client {
 
 	args := []string{"account", "show"}
-
-	cmd := exec.Command("az", args...)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
-	//fmt.Printf("az account: %q\n", out.String())
-
-	jsonStr := `
-	{
-	  "data": {
-		"object": "card",
-		"id": "card_123",
-		"last4": "4242"
-	  }
-	}
-	`
-	//s, err := strconv.Unquote(out.String())
-	s, err := strconv.Unquote(jsonStr)
+	out, err := exec.Command("az", args...).Output()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var a account
-	err = json.Unmarshal([]byte(s), &a)
-	if err != nil {
+	output := string(out)
 
+	if gjson.Valid(output) {
+		log.Print("az cli output is valid json")
+	} else {
+		panic("az cli output not valid json")
 	}
+
+	value := gjson.Get(output, "name")
+	fmt.Print(value)
 
 	client := Client{
 		CosmosAccountName: cosmosAccountName,
@@ -61,14 +45,14 @@ func NewClient(cosmosAccountName string) *Client {
 }
 
 // AZCommand Run az commands
-func (*Client) AZCommand(c []string) (o []byte) {
+func (c Client) AZCommand(cmd []string) string {
 
-	out, err := exec.Command("az", c...).Output()
+	out, err := exec.Command("az", cmd...).Output()
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("returned data %s\n", out)
 
-	return out
+	output := string(out)
+	return output
 
 }

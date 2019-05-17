@@ -18,8 +18,10 @@ func main() {
 
 	abutest()
 
-	//c := NewClient("fff")
-	//fmt.Print(c)
+	c := NewClient("fff")
+	cmd := []string{"account", "show"}
+	output := c.AZCommand(cmd)
+	log.Print(output)
 }
 
 func abutest() {

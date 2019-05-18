@@ -5,23 +5,27 @@ import (
 	"log"
 	"os/exec"
 
+	"github.com/abelal83/terraform_provider_cosmosdb/azcli"
+	"github.com/hashicorp/terraform/plugin"
+	"github.com/hashicorp/terraform/terraform"
 	"github.com/tidwall/gjson"
 )
 
 func main() {
 
-	// plugin.Serve(&plugin.ServeOpts{
-	// 	ProviderFunc: func() terraform.ResourceProvider {
-	// 		return Provider()
-	// 	},
-	// })
+	plugin.Serve(&plugin.ServeOpts{
+		ProviderFunc: func() terraform.ResourceProvider {
+			return azcli.Provider()
+		},
+	})
 
-	abutest()
+	//abutest()
 
-	c := NewClient("fff")
-	cmd := []string{"account", "show"}
-	output := c.AZCommand(cmd)
-	log.Print(output)
+	//c := azcli.NewClient()
+
+	// output := c.AZCommand(cmd)
+
+	// log.Print(output)
 }
 
 func abutest() {
@@ -42,4 +46,10 @@ func abutest() {
 
 	value := gjson.Get(output, "name")
 	fmt.Print(value)
+
+	plugin.Serve(&plugin.ServeOpts{
+		ProviderFunc: func() terraform.ResourceProvider {
+			return azcli.Provider()
+		},
+	})
 }

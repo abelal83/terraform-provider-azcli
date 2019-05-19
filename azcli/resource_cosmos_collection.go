@@ -42,6 +42,17 @@ func resourceCosmosCollection() *schema.Resource {
 				Optional: true,
 				//ForceNew: true,
 			},
+			"partition_key": {
+				Type:     schema.TypeString,
+				Default:  "",
+				Optional: true,
+				//ForceNew: true,
+			},
+			"indexing_policy": {
+				Type:     schema.TypeString,
+				Default:  "",
+				Optional: true,
+			},
 		},
 	}
 }
@@ -53,6 +64,8 @@ func resourceCosmosCollectionCreate(d *schema.ResourceData, m interface{}) error
 	cosmosAccountName := d.Get("cosmos_account_name").(string)
 	throughput := d.Get("throughput").(string)
 	dbName := d.Get("database_name").(string)
+	partitionKey := d.Get("partition_key").(string)
+	indexingPolicy := d.Get("indexing_policy").(string)
 
 	cmd := []string{
 		"cosmosdb", "collection", "create",
@@ -61,8 +74,18 @@ func resourceCosmosCollectionCreate(d *schema.ResourceData, m interface{}) error
 		"-g", resourceGroupName,
 		"-n", cosmosAccountName,
 		"--throughput", throughput,
-		"-o", "json",
 	}
+
+	if partitionKey != "" {
+		cmd = append(cmd, "--partition-key-path", partitionKey)
+	}
+
+	if indexingPolicy != "" {
+		cmd = append(cmd, "--indexing-policy", indexingPolicy)
+	}
+
+	cmd = append(cmd, "-o", "json")
+
 	output := c.AZCommand(cmd)
 
 	r, err := ParseAzCliOutput(output)

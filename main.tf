@@ -18,5 +18,23 @@ resource "azcli_cosmos_database" "default" {
    resource_group_name = "terraform-provider"
    database_name       = "${azcli_cosmos_database.default.id}"
    name                = "mycollection"
-   throughput = "500"
+   throughput = "400"
+ }
+
+  resource "azcli_cosmos_collection" "partition" {
+   cosmos_account_name = "abx"
+   resource_group_name = "terraform-provider"
+   database_name       = "${azcli_cosmos_database.default.id}"
+   name                = "partition"
+   partition_key       = "/abu/belal"
+   throughput = "400"
+ }
+
+ resource "azcli_cosmos_collection" "indexing_policy" {
+   cosmos_account_name = "abx"
+   resource_group_name = "terraform-provider"
+   database_name       = "${azcli_cosmos_database.default.id}"
+   name                = "indexing"
+   throughput = "400"
+   indexing_policy = "${file("indexing_policy.json")}"
  }

@@ -1,5 +1,10 @@
 provider "azcli" {
   subscription_name = "hello"
+  version = "~> 0.0"
+}
+
+provider "azurerm" {
+  
 }
 
 resource "azcli_cosmos_database" "default" {

@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"os/exec"
 
 	"github.com/abelal83/terraform_provider_cosmosdb/azcli"
 	"github.com/hashicorp/terraform/plugin"
@@ -13,43 +12,88 @@ import (
 
 func main() {
 
+	//cosmosDatabaseDelete()
+	//cosmosDatabaseRead()
+	//cosmosDatabaseCreate()
+
 	plugin.Serve(&plugin.ServeOpts{
 		ProviderFunc: func() terraform.ResourceProvider {
 			return azcli.Provider()
 		},
 	})
-
-	//abutest()
-
-	//c := azcli.NewClient()
-
-	// output := c.AZCommand(cmd)
-
-	// log.Print(output)
 }
 
-func abutest() {
+func cosmosDatabaseRead() error {
 
-	args := []string{"account", "show"}
-	out, err := exec.Command("az", args...).Output()
+	c := azcli.NewClient()
+	name := "testdatabase"
+	resourceGroupName := "terraform-provider"
+	cosmosAccountName := "abx"
+	cmd := []string{"cosmosdb", "database", "show", "--db-name", name, "-g", resourceGroupName, "-n", cosmosAccountName, "-o", "json"}
+	output := c.AZCommand(cmd)
+
+	r, err := azcli.ParseAzCliOutput(output)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	output := string(out)
-
-	if gjson.Valid(output) {
-		log.Print("az cli output is valid json")
-	} else {
-		panic("az cli output not valid json")
+	if !r.Found {
+		// database doesn't exist
+		log.Print("[INFO] database not found")
 	}
 
-	value := gjson.Get(output, "name")
-	fmt.Print(value)
+	return nil
+}
 
-	plugin.Serve(&plugin.ServeOpts{
-		ProviderFunc: func() terraform.ResourceProvider {
-			return azcli.Provider()
-		},
-	})
+func cosmosDatabaseCreate() error {
+
+	c := azcli.NewClient()
+	name := "testdatabase"
+	resourceGroupName := "terraform-provider"
+	cosmosAccountName := "abx"
+
+	cmd := []string{"cosmosdb", "database", "create", "--db-name", name, "-g", resourceGroupName, "-n", cosmosAccountName, "-o", "json"}
+	output := c.AZCommand(cmd)
+
+	r, err := azcli.ParseAzCliOutput(output)
+	if err != nil {
+		return err
+	}
+
+	if r.AlreadyExists {
+		// database already exists, lets just start to manage it.
+		cmd = []string{"cosmosdb", "database", "show", "--db-name", name, "-g", resourceGroupName, "-n", cosmosAccountName, "-o", "json"}
+		output = c.AZCommand(cmd)
+		id := gjson.Get(output, "id")
+		fmt.Print(id.Str)
+		return nil
+	}
+
+	// new resource created
+	id := gjson.Get(output, "id")
+	fmt.Print(id.Str)
+	return nil
+
+}
+
+func cosmosDatabaseDelete() error {
+	c := azcli.NewClient()
+	name := "testdatabase"
+	resourceGroupName := "terraform-provider"
+	cosmosAccountName := "abx"
+
+	cmd := []string{"cosmosdb", "database", "delete", "--db-name", name, "-g", resourceGroupName, "-n", cosmosAccountName, "-o", "json"}
+	output := c.AZCommand(cmd)
+
+	r, err := azcli.ParseAzCliOutput(output)
+	if err != nil {
+		return err
+	}
+
+	if !r.Found || r.CliResponse == "" {
+		// database doesn't exist
+		log.Print("[INFO] database not found")
+	}
+
+	return nil
 }

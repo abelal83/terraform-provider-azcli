@@ -2,7 +2,6 @@ package azcli
 
 import (
 	"log"
-	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/tidwall/gjson"
@@ -24,12 +23,12 @@ func resourceCosmosDatabase() *schema.Resource {
 			"cosmos_account_name": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
+				//ForceNew: true,
 			},
 			"resource_group_name": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
+				//ForceNew: true,
 			},
 		},
 	}
@@ -44,15 +43,23 @@ func resourceCosmosDatabaseCreate(d *schema.ResourceData, m interface{}) error {
 	cmd := []string{"cosmosdb", "database", "create", "--db-name", name, "-g", resourceGroupName, "-n", cosmosAccountName, "-o", "json"}
 	output := c.AZCommand(cmd)
 
-	if gjson.Valid(output) {
-		log.Print("az cli output is valid json")
-	} else {
-		panic("az cli output not valid json")
+	r, err := ParseAzCliOutput(output)
+	if err != nil {
+		return err
 	}
 
+	if r.AlreadyExists {
+		// database already exists, lets just start to manage it.
+		cmd = []string{"cosmosdb", "database", "show", "--db-name", name, "-g", resourceGroupName, "-n", cosmosAccountName, "-o", "json"}
+		output = c.AZCommand(cmd)
+		id := gjson.Get(output, "id")
+		d.SetId(id.Str)
+		return nil
+	}
+
+	// new resource created
 	id := gjson.Get(output, "id")
 	d.SetId(id.Str)
-
 	return nil
 }
 
@@ -65,15 +72,15 @@ func resourceCosmosDatabaseRead(d *schema.ResourceData, m interface{}) error {
 	cmd := []string{"cosmosdb", "database", "show", "--db-name", name, "-g", resourceGroupName, "-n", cosmosAccountName, "-o", "json"}
 	output := c.AZCommand(cmd)
 
-	switch gjson.Valid(output) {
-	case true:
-		log.Print("az cli output is valid json")
-	case false:
-		if strings.Contains(output, "Operation Failed: Resource Not Found") {
-			log.Printf("az cli - %s", output)
-			//return fmt.Errorf("Couldn't find database: %s", output)
-			d.SetId("")
-		}
+	r, err := ParseAzCliOutput(output)
+	if err != nil {
+		return err
+	}
+
+	if !r.Found {
+		// database doesn't exist
+		log.Print("[INFO] database not found")
+		d.SetId("")
 	}
 
 	return nil
@@ -81,6 +88,7 @@ func resourceCosmosDatabaseRead(d *schema.ResourceData, m interface{}) error {
 
 func resourceCosmosDatabaseUpdate(d *schema.ResourceData, m interface{}) error {
 	//c := m.(*Client)
+	// there is nothing to update for a database
 	return resourceCosmosDatabaseRead(d, m)
 }
 
@@ -93,13 +101,15 @@ func resourceCosmosDatabaseDelete(d *schema.ResourceData, m interface{}) error {
 	cmd := []string{"cosmosdb", "database", "delete", "--db-name", name, "-g", resourceGroupName, "-n", cosmosAccountName, "-o", "json"}
 	output := c.AZCommand(cmd)
 
-	switch gjson.Valid(output) {
-	case true:
-		log.Print("az cli output is valid json")
-	case false:
-		if strings.Contains(output, "Operation Failed: Resource Not Found") {
-			log.Printf("az cli - %s", output)
-		}
+	r, err := ParseAzCliOutput(output)
+	if err != nil {
+		return err
+	}
+
+	if !r.Found || r.CliResponse == "" {
+		// database doesn't exist
+		log.Print("[INFO] database not found")
+		d.SetId("")
 	}
 
 	return nil

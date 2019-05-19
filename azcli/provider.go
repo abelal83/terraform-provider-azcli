@@ -16,7 +16,8 @@ func Provider() *schema.Provider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"azcli_cosmos_database": resourceCosmosDatabase(),
+			"azcli_cosmos_database":   resourceCosmosDatabase(),
+			"azcli_cosmos_collection": resourceCosmosCollection(),
 		},
 		ConfigureFunc: providerConfigure,
 	}

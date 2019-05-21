@@ -25,6 +25,6 @@ func Provider() *schema.Provider {
 
 func providerConfigure(data *schema.ResourceData) (interface{}, error) {
 
-	c := NewClient()
+	c := NewClient(data.Get("subscription_name").(string))
 	return c, nil
 }

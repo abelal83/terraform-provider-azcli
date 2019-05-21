@@ -29,24 +29,23 @@ func resourceCosmosCollection() *schema.Resource {
 			"cosmos_account_name": {
 				Type:     schema.TypeString,
 				Required: true,
-				//ForceNew: true,
+				ForceNew: true,
 			},
 			"resource_group_name": {
 				Type:     schema.TypeString,
 				Required: true,
-				//ForceNew: true,
+				ForceNew: true,
 			},
 			"throughput": {
 				Type:     schema.TypeString,
 				Default:  400,
 				Optional: true,
-				//ForceNew: true,
 			},
 			"partition_key": {
 				Type:     schema.TypeString,
 				Default:  "",
 				Optional: true,
-				//ForceNew: true,
+				ForceNew: true,
 			},
 			"indexing_policy": {
 				Type:     schema.TypeString,
@@ -78,10 +77,12 @@ func resourceCosmosCollectionCreate(d *schema.ResourceData, m interface{}) error
 
 	if partitionKey != "" {
 		cmd = append(cmd, "--partition-key-path", partitionKey)
+		log.Printf("[INFO] Partition key %s supplied", partitionKey)
 	}
 
 	if indexingPolicy != "" {
 		cmd = append(cmd, "--indexing-policy", indexingPolicy)
+		log.Printf("[INFO] Indexing policy %s supplied", indexingPolicy)
 	}
 
 	cmd = append(cmd, "-o", "json")
@@ -94,7 +95,7 @@ func resourceCosmosCollectionCreate(d *schema.ResourceData, m interface{}) error
 	}
 
 	if r.AlreadyExists {
-		// collection already exists, lets just start to manage it.
+		log.Printf("[WARN] Collection %s already exists, will start to manage state", name)
 		cmd := []string{"cosmosdb", "collection", "show", "--collection-name", name, "--db-name", dbName, "-g", resourceGroupName, "-n", cosmosAccountName, "-o", "json"}
 		output = c.AZCommand(cmd)
 		id := gjson.Get(output, "collection.id")
@@ -102,7 +103,7 @@ func resourceCosmosCollectionCreate(d *schema.ResourceData, m interface{}) error
 		return nil
 	}
 
-	// new resource created
+	log.Printf("[INFO] Collection %s created", name)
 	id := gjson.Get(output, "collection.id")
 	d.SetId(id.Str)
 	return nil
@@ -125,8 +126,7 @@ func resourceCosmosCollectionRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if !r.Found {
-		// collection doesn't exist
-		log.Print("[INFO] collection not found")
+		log.Printf("[INFO] collection not found")
 		d.SetId("")
 	}
 

@@ -41,5 +41,5 @@ func ParseAzCliOutput(o string) (*ResourceState, error) {
 		}
 	}
 
-	return &s, fmt.Errorf("Unhandled error meesage returned by AZ cli: %s", o)
+	return &s, fmt.Errorf("Unhandled error message returned by AZ cli: %s", o)
 }

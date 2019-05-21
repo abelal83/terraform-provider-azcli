@@ -21,10 +21,16 @@ type user struct {
 }
 
 // NewClient checks az cli client is configured and resturns a new client
-func NewClient() *Client {
+func NewClient(s string) *Client {
 
-	args := []string{"account", "show"}
+	args := []string{"account", "set", "--subscription", s}
 	out, err := exec.Command("az", args...).Output()
+	if err != nil {
+		log.Panicf("az cli unable to set subscription %s, error: %s", s, err)
+	}
+
+	args = []string{"account", "show"}
+	out, err = exec.Command("az", args...).Output()
 	if err != nil {
 		log.Panicf("az cli not configured %s", err)
 	}
@@ -48,6 +54,7 @@ func NewClient() *Client {
 // AZCommand Run az commands
 func (c Client) AZCommand(cmd []string) string {
 
+	cmd = append(cmd, "--subscription", c.Name)
 	out, err := exec.Command("az", cmd...).CombinedOutput()
 	if err != nil {
 		log.Printf("Error occured whilst executing az cli %s", string(out))

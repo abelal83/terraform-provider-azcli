@@ -10,6 +10,8 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+var subscription = "Clarksons - Infrastructure - R&D"
+
 func main() {
 
 	//cosmosDatabaseDelete()
@@ -25,7 +27,7 @@ func main() {
 
 func cosmosDatabaseRead() error {
 
-	c := azcli.NewClient()
+	c, _ := azcli.NewClient(subscription)
 	name := "testdatabase"
 	resourceGroupName := "terraform-provider"
 	cosmosAccountName := "abx"
@@ -47,7 +49,7 @@ func cosmosDatabaseRead() error {
 
 func cosmosDatabaseCreate() error {
 
-	c := azcli.NewClient()
+	c, _ := azcli.NewClient(subscription)
 	name := "testdatabase"
 	resourceGroupName := "terraform-provider"
 	cosmosAccountName := "abx"
@@ -77,7 +79,7 @@ func cosmosDatabaseCreate() error {
 }
 
 func cosmosDatabaseDelete() error {
-	c := azcli.NewClient()
+	c, _ := azcli.NewClient(subscription)
 	name := "testdatabase"
 	resourceGroupName := "terraform-provider"
 	cosmosAccountName := "abx"

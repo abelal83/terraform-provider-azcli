@@ -96,7 +96,13 @@ func resourceCosmosCollectionCreate(d *schema.ResourceData, m interface{}) error
 
 	if r.AlreadyExists {
 		log.Printf("[WARN] Collection %s already exists, will start to manage state", name)
-		cmd := []string{"cosmosdb", "collection", "show", "--collection-name", name, "--db-name", dbName, "-g", resourceGroupName, "-n", cosmosAccountName, "-o", "json"}
+		cmd := []string{
+			"cosmosdb", "collection", "show",
+			"--collection-name", name, "--db-name", dbName,
+			"-g", resourceGroupName, "-n", cosmosAccountName,
+			"-o", "json",
+		}
+
 		output = c.AZCommand(cmd)
 		id := gjson.Get(output, "collection.id")
 		d.SetId(id.Str)
@@ -117,7 +123,11 @@ func resourceCosmosCollectionRead(d *schema.ResourceData, m interface{}) error {
 	cosmosAccountName := d.Get("cosmos_account_name").(string)
 	dbName := d.Get("database_name").(string)
 
-	cmd := []string{"cosmosdb", "collection", "show", "--collection-name", name, "--db-name", dbName, "-g", resourceGroupName, "-n", cosmosAccountName, "-o", "json"}
+	cmd := []string{
+		"cosmosdb", "collection", "show", "--collection-name", name,
+		"--db-name", dbName, "-g", resourceGroupName, "-n", cosmosAccountName,
+		"-o", "json",
+	}
 	output := c.AZCommand(cmd)
 
 	r, err := ParseAzCliOutput(output)
@@ -177,7 +187,13 @@ func resourceCosmosCollectionDelete(d *schema.ResourceData, m interface{}) error
 	cosmosAccountName := d.Get("cosmos_account_name").(string)
 	dbName := d.Get("database_name").(string)
 
-	cmd := []string{"cosmosdb", "collection", "delete", "--collection-name", name, "--db-name", dbName, "-g", resourceGroupName, "-n", cosmosAccountName, "-o", "json"}
+	cmd := []string{
+		"cosmosdb", "collection", "delete",
+		"--collection-name", name, "--db-name", dbName,
+		"-g", resourceGroupName, "-n", cosmosAccountName,
+		"-o", "json",
+	}
+
 	output := c.AZCommand(cmd)
 
 	r, err := ParseAzCliOutput(output)

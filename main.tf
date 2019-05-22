@@ -21,7 +21,8 @@ resource "azcli_cosmos_database" "default" {
    resource_group_name = "${local.resource_group_name}"
    database_name       = "${azcli_cosmos_database.default.id}"
    name                = "mycollection"
-   throughput = "400"
+   throughput = "500"
+
  }
 
   resource "azcli_cosmos_collection" "partition" {

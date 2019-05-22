@@ -38,7 +38,7 @@ func resourceCosmosCollection() *schema.Resource {
 			},
 			"throughput": {
 				Type:     schema.TypeString,
-				Default:  400,
+				Default:  "400",
 				Optional: true,
 			},
 			"partition_key": {
@@ -105,11 +105,22 @@ func resourceCosmosCollectionCreate(d *schema.ResourceData, m interface{}) error
 
 		output = c.AZCommand(cmd)
 		id := gjson.Get(output, "collection.id")
+		resultThroughput := gjson.Get(output, "offer.content.offerThroughput")
+		if resultThroughput.String() == "" {
+			return fmt.Errorf("Unable to get offerthroughput from %s, got %s instead", output, resultThroughput)
+		}
+		d.Set("throughput", resultThroughput.String())
 		d.SetId(id.Str)
 		return nil
 	}
 
 	log.Printf("[INFO] Collection %s created", name)
+	resultThroughput := gjson.Get(output, "offer.content.offerThroughput")
+	if resultThroughput.String() == "" {
+		return fmt.Errorf("Unable to get offerthroughput from %s", output)
+	}
+	d.Set("throughput", resultThroughput.String())
+
 	id := gjson.Get(output, "collection.id")
 	d.SetId(id.Str)
 	return nil
@@ -140,8 +151,11 @@ func resourceCosmosCollectionRead(d *schema.ResourceData, m interface{}) error {
 		d.SetId("")
 	}
 
-	resultThroughput := gjson.Get(output, "offer.offerthroughput")
-	d.Set("offerthroughput", resultThroughput.Str)
+	resultThroughput := gjson.Get(output, "offer.content.offerThroughput")
+	if resultThroughput.String() == "" {
+		return fmt.Errorf("Unable to get offerthroughput from %s, got %s instead", output, resultThroughput)
+	}
+	d.Set("throughput", resultThroughput.String())
 	return nil
 
 }
@@ -175,8 +189,11 @@ func resourceCosmosCollectionUpdate(d *schema.ResourceData, m interface{}) error
 		return fmt.Errorf("Collection %s could not be found. AZ CLI returned %s", name, r.CliResponse)
 	}
 
-	resultThroughput := gjson.Get(output, "offer.offerthroughput")
-	d.Set("offerthroughput", resultThroughput.Str)
+	resultThroughput := gjson.Get(output, "offer.content.offerThroughput")
+	if resultThroughput.String() == "" {
+		return fmt.Errorf("Unable to get offerthroughput from %s, got %s instead", output, resultThroughput)
+	}
+	d.Set("throughput", resultThroughput.String())
 	return nil
 }
 

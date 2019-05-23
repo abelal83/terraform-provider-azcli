@@ -149,6 +149,8 @@ func resourceCosmosCollectionRead(d *schema.ResourceData, m interface{}) error {
 	if !r.Found {
 		log.Printf("[INFO] collection not found")
 		d.SetId("")
+
+		return nil
 	}
 
 	resultThroughput := gjson.Get(output, "offer.content.offerThroughput")

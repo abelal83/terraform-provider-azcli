@@ -2,6 +2,7 @@ package azcli
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os/exec"
 
@@ -21,12 +22,20 @@ type user struct {
 }
 
 // NewClient checks az cli client is configured and resturns a new client
-func NewClient() *Client {
+func NewClient(s string) (*Client, error) {
 
-	args := []string{"account", "show"}
-	out, err := exec.Command("az", args...).Output()
+	//s = strconv.Quote(s)
+	args := []string{"account", "set", "--subscription", s}
+	out, err := exec.Command("az", args...).CombinedOutput()
 	if err != nil {
-		log.Panicf("az cli not configured %s", err)
+		//log.Panicf("az cli unable to set subscription %s, error: %s", s, err)
+		return nil, fmt.Errorf("az cli unable to set subscription %s, error: %s", s, out)
+	}
+
+	args = []string{"account", "show"}
+	out, err = exec.Command("az", args...).CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("az cli not configured %s", out)
 	}
 
 	output := string(out)
@@ -42,12 +51,13 @@ func NewClient() *Client {
 	var client Client
 	json.Unmarshal(out, &client)
 
-	return &client
+	return &client, nil
 }
 
 // AZCommand Run az commands
 func (c Client) AZCommand(cmd []string) string {
 
+	cmd = append(cmd, "--subscription", c.Name)
 	out, err := exec.Command("az", cmd...).CombinedOutput()
 	if err != nil {
 		log.Printf("Error occured whilst executing az cli %s", string(out))

@@ -30,6 +30,10 @@ func ParseAzCliOutput(o string) (*ResourceState, error) {
 			s.Found = false
 			return &s, nil
 		}
+		if strings.Contains(o, "Failed to instantiate an Azure Cosmos DB client using the provided credential Azure Error: ResourceNotFound") {
+			s.Found = false
+			return &s, nil
+		}
 		if strings.Contains(o, "Operation Failed: Resource Already Exists") {
 			s.AlreadyExists = true
 			return &s, nil
@@ -41,5 +45,5 @@ func ParseAzCliOutput(o string) (*ResourceState, error) {
 		}
 	}
 
-	return &s, fmt.Errorf("Unhandled error meesage returned by AZ cli: %s", o)
+	return &s, fmt.Errorf("Unhandled error message returned by AZ cli: %s", o)
 }

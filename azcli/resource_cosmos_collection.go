@@ -29,24 +29,23 @@ func resourceCosmosCollection() *schema.Resource {
 			"cosmos_account_name": {
 				Type:     schema.TypeString,
 				Required: true,
-				//ForceNew: true,
+				ForceNew: true,
 			},
 			"resource_group_name": {
 				Type:     schema.TypeString,
 				Required: true,
-				//ForceNew: true,
+				ForceNew: true,
 			},
 			"throughput": {
 				Type:     schema.TypeString,
-				Default:  400,
+				Default:  "400",
 				Optional: true,
-				//ForceNew: true,
 			},
 			"partition_key": {
 				Type:     schema.TypeString,
 				Default:  "",
 				Optional: true,
-				//ForceNew: true,
+				ForceNew: true,
 			},
 			"indexing_policy": {
 				Type:     schema.TypeString,
@@ -78,10 +77,12 @@ func resourceCosmosCollectionCreate(d *schema.ResourceData, m interface{}) error
 
 	if partitionKey != "" {
 		cmd = append(cmd, "--partition-key-path", partitionKey)
+		log.Printf("[INFO] Partition key %s supplied", partitionKey)
 	}
 
 	if indexingPolicy != "" {
 		cmd = append(cmd, "--indexing-policy", indexingPolicy)
+		log.Printf("[INFO] Indexing policy %s supplied", indexingPolicy)
 	}
 
 	cmd = append(cmd, "-o", "json")
@@ -94,15 +95,32 @@ func resourceCosmosCollectionCreate(d *schema.ResourceData, m interface{}) error
 	}
 
 	if r.AlreadyExists {
-		// collection already exists, lets just start to manage it.
-		cmd := []string{"cosmosdb", "collection", "show", "--collection-name", name, "--db-name", dbName, "-g", resourceGroupName, "-n", cosmosAccountName, "-o", "json"}
+		log.Printf("[WARN] Collection %s already exists, will start to manage state", name)
+		cmd := []string{
+			"cosmosdb", "collection", "show",
+			"--collection-name", name, "--db-name", dbName,
+			"-g", resourceGroupName, "-n", cosmosAccountName,
+			"-o", "json",
+		}
+
 		output = c.AZCommand(cmd)
 		id := gjson.Get(output, "collection.id")
+		resultThroughput := gjson.Get(output, "offer.content.offerThroughput")
+		if resultThroughput.String() == "" {
+			return fmt.Errorf("Unable to get offerthroughput from %s, got %s instead", output, resultThroughput)
+		}
+		d.Set("throughput", resultThroughput.String())
 		d.SetId(id.Str)
 		return nil
 	}
 
-	// new resource created
+	log.Printf("[INFO] Collection %s created", name)
+	resultThroughput := gjson.Get(output, "offer.content.offerThroughput")
+	if resultThroughput.String() == "" {
+		return fmt.Errorf("Unable to get offerthroughput from %s", output)
+	}
+	d.Set("throughput", resultThroughput.String())
+
 	id := gjson.Get(output, "collection.id")
 	d.SetId(id.Str)
 	return nil
@@ -116,7 +134,11 @@ func resourceCosmosCollectionRead(d *schema.ResourceData, m interface{}) error {
 	cosmosAccountName := d.Get("cosmos_account_name").(string)
 	dbName := d.Get("database_name").(string)
 
-	cmd := []string{"cosmosdb", "collection", "show", "--collection-name", name, "--db-name", dbName, "-g", resourceGroupName, "-n", cosmosAccountName, "-o", "json"}
+	cmd := []string{
+		"cosmosdb", "collection", "show", "--collection-name", name,
+		"--db-name", dbName, "-g", resourceGroupName, "-n", cosmosAccountName,
+		"-o", "json",
+	}
 	output := c.AZCommand(cmd)
 
 	r, err := ParseAzCliOutput(output)
@@ -125,13 +147,17 @@ func resourceCosmosCollectionRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if !r.Found {
-		// collection doesn't exist
-		log.Print("[INFO] collection not found")
+		log.Printf("[INFO] collection not found")
 		d.SetId("")
+
+		return nil
 	}
 
-	resultThroughput := gjson.Get(output, "offer.offerthroughput")
-	d.Set("offerthroughput", resultThroughput.Str)
+	resultThroughput := gjson.Get(output, "offer.content.offerThroughput")
+	if resultThroughput.String() == "" {
+		return fmt.Errorf("Unable to get offerthroughput from %s, got %s instead", output, resultThroughput)
+	}
+	d.Set("throughput", resultThroughput.String())
 	return nil
 
 }
@@ -165,8 +191,11 @@ func resourceCosmosCollectionUpdate(d *schema.ResourceData, m interface{}) error
 		return fmt.Errorf("Collection %s could not be found. AZ CLI returned %s", name, r.CliResponse)
 	}
 
-	resultThroughput := gjson.Get(output, "offer.offerthroughput")
-	d.Set("offerthroughput", resultThroughput.Str)
+	resultThroughput := gjson.Get(output, "offer.content.offerThroughput")
+	if resultThroughput.String() == "" {
+		return fmt.Errorf("Unable to get offerthroughput from %s, got %s instead", output, resultThroughput)
+	}
+	d.Set("throughput", resultThroughput.String())
 	return nil
 }
 
@@ -177,7 +206,13 @@ func resourceCosmosCollectionDelete(d *schema.ResourceData, m interface{}) error
 	cosmosAccountName := d.Get("cosmos_account_name").(string)
 	dbName := d.Get("database_name").(string)
 
-	cmd := []string{"cosmosdb", "collection", "delete", "--collection-name", name, "--db-name", dbName, "-g", resourceGroupName, "-n", cosmosAccountName, "-o", "json"}
+	cmd := []string{
+		"cosmosdb", "collection", "delete",
+		"--collection-name", name, "--db-name", dbName,
+		"-g", resourceGroupName, "-n", cosmosAccountName,
+		"-o", "json",
+	}
+
 	output := c.AZCommand(cmd)
 
 	r, err := ParseAzCliOutput(output)

@@ -1,19 +1,19 @@
 # terraform_azcli_provider
 
 - [terraform_azcli_provider](#terraformazcliprovider)
-  - [Synopsis](#synopsis)
-  - [Dev Stuff](#dev-stuff)
-    - [Required Go Modules](#required-go-modules)
-    - [Useful Go Commands](#useful-go-commands)
-  - [User Stuff](#user-stuff)
-    - [Authenticating to Azure](#authenticating-to-azure)
-      - [Provider Example Usage](#provider-example-usage)
-    - [Resources](#resources)
+  - [Synopsis](#Synopsis)
+  - [Dev Stuff](#Dev-Stuff)
+    - [Required Go Modules](#Required-Go-Modules)
+    - [Useful Go Commands](#Useful-Go-Commands)
+  - [User Stuff](#User-Stuff)
+    - [Authenticating to Azure](#Authenticating-to-Azure)
+      - [Provider Example Usage](#Provider-Example-Usage)
+    - [Resources](#Resources)
       - [azcli_cosmos_database](#azclicosmosdatabase)
-        - [Database Example Usage](#database-example-usage)
+        - [Database Example Usage](#Database-Example-Usage)
       - [azcli_cosmos_collection](#azclicosmoscollection)
-        - [Collection Example Usage](#collection-example-usage)
-    - [Full Example](#full-example)
+        - [Collection Example Usage](#Collection-Example-Usage)
+    - [Full Example](#Full-Example)
 
 ## Synopsis
 
@@ -47,7 +47,7 @@ This provider expects the AZ cli to be logged in before use, the only parameter 
 ```hcl
 provider "azcli" {
   subscription_name = "my-azure-subscription"
-  version = "~> 0.0"
+  version = "~> 0.0.4"
 }
 ```
 
@@ -68,6 +68,14 @@ locals {
   resource_group_name = "abxrg0008-test"
   cosmos_account_name = "abxtf"
 
+}
+
+# WARNING - throughput doesn't change as az cli doesn't support updating a database
+resource "azcli_cosmos_database" "with_throughput" {
+  cosmos_account_name = "${local.cosmos_account_name}"
+  resource_group_name = "${local.resource_group_name}"
+  name                = "testdatabase"
+  throughput = "400"
 }
 
 resource "azcli_cosmos_database" "default" {

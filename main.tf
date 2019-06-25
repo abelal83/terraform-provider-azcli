@@ -10,6 +10,12 @@ locals {
 
 }
 
+resource "azcli_cosmos_database" "db_with_ru" {
+  cosmos_account_name = "${local.cosmos_account_name}"
+  resource_group_name = "${local.resource_group_name}"
+  name                = "testdatabasewithru"
+  throughput = 600
+}
 resource "azcli_cosmos_database" "default" {
   cosmos_account_name = "${local.cosmos_account_name}"
   resource_group_name = "${local.resource_group_name}"

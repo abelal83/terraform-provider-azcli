@@ -30,6 +30,11 @@ func resourceCosmosDatabase() *schema.Resource {
 				Required: true,
 				//ForceNew: true,
 			},
+			"throughput": {
+				Type:     schema.TypeString,
+				Default:  "400",
+				Optional: true,
+			},
 		},
 	}
 }
@@ -39,8 +44,9 @@ func resourceCosmosDatabaseCreate(d *schema.ResourceData, m interface{}) error {
 	name := d.Get("name").(string)
 	resourceGroupName := d.Get("resource_group_name").(string)
 	cosmosAccountName := d.Get("cosmos_account_name").(string)
+	throughput := d.Get("throughput").(string)
 
-	cmd := []string{"cosmosdb", "database", "create", "--db-name", name, "-g", resourceGroupName, "-n", cosmosAccountName, "-o", "json"}
+	cmd := []string{"cosmosdb", "database", "create", "--db-name", name, "-g", resourceGroupName, "-n", cosmosAccountName, "--throughput", throughput, "-o", "json"}
 	output := c.AZCommand(cmd)
 
 	r, err := ParseAzCliOutput(output)

@@ -89,6 +89,10 @@ resource "azcli_cosmos_database" "default" {
 
 Manages Cosmos database collections.
 
+This can create/manage a collection with scaling set at the collection, or if the db has scaling enabled it can create/manage collections with throughput controlled at the DB.
+
+Please note if you create a collection using db throughput, you cannot change it to dedicated throughput later. Also you cannot move a collection with dedicated througphput to db based throughput. 
+
 ##### Collection Example Usage
 
 -----
@@ -106,6 +110,28 @@ resource "azcli_cosmos_database" "default" {
   resource_group_name = "${local.resource_group_name}"
   name                = "testdatabase"
 }
+
+resource "azcli_cosmos_database" "db_with_throughput" {
+  cosmos_account_name = "${local.cosmos_account_name}"
+  resource_group_name = "${local.resource_group_name}"
+  name                = "throughputdb"
+  throughput          = "400"
+}
+
+resource "azcli_cosmos_collection" "collection_with_dedicated_throughput" {
+   cosmos_account_name = "${local.cosmos_account_name}"
+   resource_group_name = "${local.resource_group_name}"
+   database_name       = "${azcli_cosmos_database.db_with_throughput.id}"
+   name                = "mycollectionwithdedicatedthroughput"
+   throughput          = "800"
+ }
+
+ resource "azcli_cosmos_collection" "collection_with_db_throughput" {
+   cosmos_account_name = "${local.cosmos_account_name}"
+   resource_group_name = "${local.resource_group_name}"
+   database_name       = "${azcli_cosmos_database.db_with_throughput.id}"
+   name                = "mycollectionwithdbthroughput"
+ }
 
  resource "azcli_cosmos_collection" "default" {
    cosmos_account_name = "${local.cosmos_account_name}"

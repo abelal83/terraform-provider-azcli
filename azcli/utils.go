@@ -38,6 +38,11 @@ func ParseAzCliOutput(o string) (*ResourceState, error) {
 			s.AlreadyExists = true
 			return &s, nil
 		}
+		if strings.Contains(o, "Cannot find offer for collection") {
+			s.AlreadyExists = true
+			var message = "You are not allowed to set throughput for a collection that has already been created against a DB with scaling enabled and no inital throughput set, you must remove collection and re-create"
+			return &s, fmt.Errorf("Unhandled error message returned by AZ cli: %s", message)
+		}
 		if strings.Compare(o, "") == 0 {
 			// delete operations from az cli respond back with no output
 			s.CliResponse = ""

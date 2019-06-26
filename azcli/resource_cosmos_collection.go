@@ -38,7 +38,7 @@ func resourceCosmosCollection() *schema.Resource {
 			},
 			"throughput": {
 				Type:     schema.TypeString,
-				Default:  "400",
+				Default:  "",
 				Optional: true,
 			},
 			"partition_key": {
@@ -72,7 +72,11 @@ func resourceCosmosCollectionCreate(d *schema.ResourceData, m interface{}) error
 		"--db-name", dbName,
 		"-g", resourceGroupName,
 		"-n", cosmosAccountName,
-		"--throughput", throughput,
+	}
+
+	if throughput != "" {
+		cmd = append(cmd, "--throughput", throughput)
+		log.Printf("[INFO] throughput value %s supplied", throughput)
 	}
 
 	if partitionKey != "" {
@@ -105,21 +109,36 @@ func resourceCosmosCollectionCreate(d *schema.ResourceData, m interface{}) error
 
 		output = c.AZCommand(cmd)
 		id := gjson.Get(output, "collection.id")
+
 		resultThroughput := gjson.Get(output, "offer.content.offerThroughput")
 		if resultThroughput.String() == "" {
-			return fmt.Errorf("Unable to get offerthroughput from %s, got %s instead", output, resultThroughput)
+			resultThroughput := gjson.Get(output, "offer")
+			if resultThroughput.Value() == nil {
+				log.Printf("[INFO] Collection does not specify throughput %s, this is using database scaling", output)
+			} else {
+				return fmt.Errorf("Unable to get offerthroughput from %s, we are expecting a value if set or null if scale at db level", output)
+			}
+		} else {
+			d.Set("throughput", resultThroughput.String())
 		}
-		d.Set("throughput", resultThroughput.String())
+
 		d.SetId(id.Str)
 		return nil
 	}
 
 	log.Printf("[INFO] Collection %s created", name)
+
 	resultThroughput := gjson.Get(output, "offer.content.offerThroughput")
 	if resultThroughput.String() == "" {
-		return fmt.Errorf("Unable to get offerthroughput from %s", output)
+		resultThroughput := gjson.Get(output, "offer")
+		if resultThroughput.Value() == nil {
+			log.Printf("[INFO] Collection does not specify throughput %s, this is using database scaling", output)
+		} else {
+			return fmt.Errorf("Unable to get offerthroughput from %s, we are expecting a value if set or null if scale at db level", output)
+		}
+	} else {
+		d.Set("throughput", resultThroughput.String())
 	}
-	d.Set("throughput", resultThroughput.String())
 
 	id := gjson.Get(output, "collection.id")
 	d.SetId(id.Str)
@@ -155,11 +174,17 @@ func resourceCosmosCollectionRead(d *schema.ResourceData, m interface{}) error {
 
 	resultThroughput := gjson.Get(output, "offer.content.offerThroughput")
 	if resultThroughput.String() == "" {
-		return fmt.Errorf("Unable to get offerthroughput from %s, got %s instead", output, resultThroughput)
+		resultThroughput := gjson.Get(output, "offer")
+		if resultThroughput.Value() == nil {
+			log.Printf("[INFO] Collection does not specify throughput %s, this is using database scaling", output)
+		} else {
+			return fmt.Errorf("Unable to get offerthroughput from %s, we are expecting a value if set or null if scale at db level", output)
+		}
+	} else {
+		d.Set("throughput", resultThroughput.String())
 	}
-	d.Set("throughput", resultThroughput.String())
-	return nil
 
+	return nil
 }
 
 func resourceCosmosCollectionUpdate(d *schema.ResourceData, m interface{}) error {
@@ -176,9 +201,13 @@ func resourceCosmosCollectionUpdate(d *schema.ResourceData, m interface{}) error
 		"--db-name", dbName,
 		"-g", resourceGroupName,
 		"-n", cosmosAccountName,
-		"--throughput", throughput,
-		"-o", "json",
 	}
+
+	if throughput != "" {
+		cmd = append(cmd, "--throughput", throughput)
+		log.Printf("[INFO] throughput value %s supplied", throughput)
+	}
+
 	output := c.AZCommand(cmd)
 
 	r, err := ParseAzCliOutput(output)
@@ -193,9 +222,16 @@ func resourceCosmosCollectionUpdate(d *schema.ResourceData, m interface{}) error
 
 	resultThroughput := gjson.Get(output, "offer.content.offerThroughput")
 	if resultThroughput.String() == "" {
-		return fmt.Errorf("Unable to get offerthroughput from %s, got %s instead", output, resultThroughput)
+		resultThroughput := gjson.Get(output, "offer")
+		if resultThroughput.Value() == nil {
+			log.Printf("[INFO] Collection does not specify throughput %s, this is using database scaling", output)
+		} else {
+			return fmt.Errorf("Unable to get offerthroughput from %s, we are expecting a value if set or null if scale at db level", output)
+		}
+	} else {
+		d.Set("throughput", resultThroughput.String())
 	}
-	d.Set("throughput", resultThroughput.String())
+
 	return nil
 }
 

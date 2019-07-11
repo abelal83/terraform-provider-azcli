@@ -2,9 +2,7 @@ package azcli
 
 import (
 	"log"
-
 	"strconv"
-
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/tidwall/gjson"
 )
@@ -53,15 +51,12 @@ func resourceFunctionAppSlot() *schema.Resource {
 }
 
 func resourceFunctionAppSlotCreate(d *schema.ResourceData, m interface{}) error {
-	log.Println("starting")
 	c := m.(*Client)
-	log.Println("client Defined")
 	slotname := d.Get("slot_name").(string)
 	resourceGroupName := d.Get("resource_group_name").(string)
 	functionAppName := d.Get("function_app_name").(string)
 	http20Enabled := d.Get("http_20_enabled").(string)
 	alwaysOn := d.Get("always_on").(string)
-	log.Println("Defined vars")
 	createCmd := []string{
 		"functionapp", "deployment", "slot", "create",
 		"--name", functionAppName,
@@ -75,7 +70,7 @@ func resourceFunctionAppSlotCreate(d *schema.ResourceData, m interface{}) error 
 
 	r, err := ParseAzCliOutput(createOutput)
 	if r.AlreadyExists {
-		log.Println("[WARN] Functionapp $s with slot $s already exist", functionAppName, slotname)
+		log.Println("[WARN] Functionapp %s with slot %s already exist", functionAppName, slotname)
 	}
 
 	if err != nil {
@@ -101,7 +96,7 @@ func resourceFunctionAppSlotCreate(d *schema.ResourceData, m interface{}) error 
 	}
 
 	if configR.AlreadyExists {
-		log.Println("[WARN] Functionapp $s with slot $s already exist", functionAppName, slotname)
+		log.Println("[WARN] Functionapp %s with slot %s already exist", functionAppName, slotname)
 	}
 
 	identityCmd := []string{
@@ -118,11 +113,11 @@ func resourceFunctionAppSlotCreate(d *schema.ResourceData, m interface{}) error 
 		return err
 	}
 	if identityR.AlreadyExists {
-		log.Println("[WARN] Functionapp $s with slot $s already exist", functionAppName, slotname)
+		log.Println("[WARN] Functionapp %s with slot %s already exist", functionAppName, slotname)
 	}
 
 	principalID := gjson.Get(identityOutput, "principalId")
-	log.Println("[INFO] Identity Principal $s", principalID)
+	log.Println("[INFO] Identity Principal %s", principalID)
 	d.Set("slot_name", slotname)
 	d.Set("resource_group_name", resourceGroupName)
 	d.Set("function_app_name", functionAppName)
@@ -165,25 +160,17 @@ func resourceFunctionAppSlotRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if !r.Found {
-		// slot not found
 		log.Print("[INFO] Slot not found")
 		d.SetId("")
 	}
 
-	log.Println("[INFO] Start looking here")
-	log.Println("[INFO] GetOutput: ", GetOutput)
-	log.Println("[INFO] Get config output: ", GetConfigOutput)
-
 	var identity string = gjson.Get(GetOutput, "identity.principalId").String()
-	log.Println("[INFO] Identity principal: ", identity)
 
 	alwaysOnBool := gjson.Get(GetConfigOutput, "alwaysOn").Bool()
 	alwaysOn := strconv.FormatBool(alwaysOnBool)
-	log.Println("[INFO] always on: ", alwaysOn)
 
 	http2Bool := gjson.Get(GetConfigOutput, "http20Enabled").Bool()
 	http2 := strconv.FormatBool(http2Bool)
-	log.Println("[INFO] http2: ", http2)
 
 	d.Set("slot_name", slotname)
 	d.Set("resource_group_name", resourceGroupName)
@@ -196,7 +183,6 @@ func resourceFunctionAppSlotRead(d *schema.ResourceData, m interface{}) error {
 }
 func resourceFunctionAppSlotUpdate(d *schema.ResourceData, m interface{}) error {
 	c := m.(*Client)
-	log.Println("Entering update command")
 
 	slotname := d.Get("slot_name").(string)
 	resourceGroupName := d.Get("resource_group_name").(string)

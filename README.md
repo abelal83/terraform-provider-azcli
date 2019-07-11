@@ -190,3 +190,57 @@ resource "azcli_cosmos_database" "default" {
    throughput = "400"
  }
 ```
+
+### azcli_functionapp_slot
+
+The resource type will create a function app slot and perform some basic managing of setting.
+
+This will allow you to configure the following settings:
+
+- http 2.0
+- always on
+
+This also enables by default a managed identity
+
+#### Example
+
+The below example will create two slots
+
+```json
+
+provider "azcli" {
+  subscription_name = "Clarksons - Development - R&D"
+  version = "=0.0.6"
+}
+
+
+locals {
+  resource_group_name = "ctrrg000008"
+
+}
+
+resource "azcli_functionapp_slot" "slot1" {
+  slot_name = "slot1"
+  resource_group_name = "ctrrg000008"
+  function_app_name = "mrdtestapp"
+  http_20_enabled = "true"
+  always_on = "true"
+}
+resource "azcli_functionapp_slot" "slot2" {
+  slot_name = "slot2"
+  resource_group_name = "ctrrg000008"
+  function_app_name = "mrdtestapp"
+  http_20_enabled = "true"
+  always_on = "false"
+}
+
+
+output "id" {
+  value = azcli_functionapp_slot.slot1.id
+}
+
+output "identity" {
+  value = azcli_functionapp_slot.slot1.identity
+}
+
+```

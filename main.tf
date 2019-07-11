@@ -1,50 +1,56 @@
 provider "azcli" {
-  subscription_name = "Clarksons - Infrastructure - R&D"
-  version = "~> 0.0"
+  subscription_name = "Clarksons - Development - R&D"
+  version = "=0.0.10"
 }
 
 
 locals {
-  resource_group_name = "abxrg0008-test"
-  cosmos_account_name = "abxtf"
+  resource_group_name = "ctrrg000008"
 
 }
 
-resource "azcli_cosmos_database" "db_with_ru" {
-  cosmos_account_name = "${local.cosmos_account_name}"
-  resource_group_name = "${local.resource_group_name}"
-  name                = "testdatabasewithru"
-  throughput = 600
-}
-resource "azcli_cosmos_database" "default" {
-  cosmos_account_name = "${local.cosmos_account_name}"
-  resource_group_name = "${local.resource_group_name}"
-  name                = "testdatabase"
+resource "azcli_functionapp_slot" "slot1" {
+  slot_name = "slot1"
+  resource_group_name = "ctrrg000008"
+  function_app_name = "mrdtestapp"
+  http_20_enabled = "true"
+  always_on = "true"
 }
 
- resource "azcli_cosmos_collection" "default" {
-   cosmos_account_name = "${local.cosmos_account_name}"
-   resource_group_name = "${local.resource_group_name}"
-   database_name       = "${azcli_cosmos_database.default.id}"
-   name                = "mycollection"
-   throughput = "500"
+resource "azcli_functionapp_slot" "slot2" {
+  slot_name = "slot2"
+  resource_group_name = "ctrrg000008"
+  function_app_name = "mrdtestapp"
+  http_20_enabled = "true"
+  always_on = "true"
+}
 
- }
+resource "azcli_functionapp_slot" "slot3" {
+  slot_name = "slot3"
+  resource_group_name = "ctrrg000008"
+  function_app_name = "mrdtestapp"
+  http_20_enabled = "true"
+  always_on = "true"
+}
 
-  resource "azcli_cosmos_collection" "partition" {
-   cosmos_account_name = "${local.cosmos_account_name}"
-   resource_group_name = "${local.resource_group_name}"
-   database_name       = "${azcli_cosmos_database.default.id}"
-   name                = "partition"
-   partition_key       = "/abu/belal/test"
-   throughput = "400"
- }
+resource "azcli_functionapp_slot" "slot4" {
+  slot_name = "slot4"
+  resource_group_name = "ctrrg000008"
+  function_app_name = "mrdtestapp"
+  http_20_enabled = "true"
+  always_on = "true"
+}
 
-#  resource "azcli_cosmos_collection" "indexing_policy" {
-#    cosmos_account_name = "abx"
-#    resource_group_name = "terraform-provider"
-#    database_name       = "${azcli_cosmos_database.default.id}"
-#    name                = "indexing"
-#    throughput = "400"
-#    indexing_policy = "${file("indexing_policy.json")}"
-#  }
+output "id" {
+  value = azcli_functionapp_slot.slot1.id
+}
+
+output "identity" {
+  value = azcli_functionapp_slot.slot1.identity
+}
+output "identity2" {
+  value = azcli_functionapp_slot.slot3.identity
+}
+output "identity4" {
+  value = azcli_functionapp_slot.slot4.identity
+}

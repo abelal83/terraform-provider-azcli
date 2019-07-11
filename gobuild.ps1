@@ -1,12 +1,12 @@
-Set-EnvironmentVariable -Name GOARCH -Value amd64 -ForProcess
-Set-Location $PSScriptRoot
-Set-EnvironmentVariable -Name GOOS -Value windows -ForProcess
-go build -o "terraform-provider-azcli_v0.0.5_x64.exe"
-#Remove-Item .\.terraform -Force -Confirm:$false
+$env:GOOS = "windows"
+$env:GOARCH = "amd64"
+remove-item ".\terraform-provider-azcli_v0.0.6_x64.exe" -Force -ErrorAction SilentlyContinue
+go build -o "terraform-provider-azcli_v0.0.6_x64.exe"
+#Remove-Item .\.terraform -Force -Recurse
+#remove-item .\terraform.tfstate -Force
 #terraform init
-#.\terraform-provider-cosmos.exe
-#terraform.exe init
-#terraform.exe plan
-#terraform.exe apply -auto-approve
-Set-EnvironmentVariable -Name GOOS -Value linux -ForProcess
-go build -o "terraform-provider-azcli_v0.0.5_x64"
+#terraform.exe plan 
+
+$env:GOOS = "linux"
+remove-item ".\terraform-provider-azcli_v0.0.6_x64" -Force -ErrorAction SilentlyContinue
+go build -o "terraform-provider-azcli_v0.0.6_x64"

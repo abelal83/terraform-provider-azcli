@@ -206,7 +206,7 @@ This also enables by default a managed identity
 
 The below example will create two slots
 
-```json
+```terraform
 
 provider "azcli" {
   subscription_name = "Clarksons - Development - R&D"

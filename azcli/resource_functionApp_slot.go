@@ -3,6 +3,8 @@ package azcli
 import (
 	"log"
 
+	"strconv"
+
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/tidwall/gjson"
 )
@@ -44,8 +46,7 @@ func resourceFunctionAppSlot() *schema.Resource {
 			},
 			"identity": {
 				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: false,
+				Computed: true,
 			},
 		},
 	}
@@ -138,17 +139,27 @@ func resourceFunctionAppSlotRead(d *schema.ResourceData, m interface{}) error {
 	resourceGroupName := d.Get("resource_group_name").(string)
 	functionAppName := d.Get("function_app_name").(string)
 
-	getConfigCmd := []string{
+	getCmd := []string{
+		"functionapp", "show",
+		"--name", functionAppName,
+		"--resource-group", resourceGroupName,
+		"--slot", slotname,
+		"-o", "json",
+	}
+
+	getConfig := []string{
 		"functionapp", "config", "show",
 		"--name", functionAppName,
 		"--resource-group", resourceGroupName,
 		"--slot", slotname,
 		"-o", "json",
 	}
-	configOutput := c.AZCommand(getConfigCmd)
 
-	r, err := ParseAzCliOutput(configOutput)
-	log.Println("[INFO] function app slot config $s", configOutput)
+	GetOutput := c.AZCommand(getCmd)
+	GetConfigOutput := c.AZCommand(getConfig)
+
+	r, err := ParseAzCliOutput(GetOutput)
+
 	if err != nil {
 		return err
 	}
@@ -159,13 +170,112 @@ func resourceFunctionAppSlotRead(d *schema.ResourceData, m interface{}) error {
 		d.SetId("")
 	}
 
+	log.Println("[INFO] Start looking here")
+	log.Println("[INFO] GetOutput: ", GetOutput)
+	log.Println("[INFO] Get config output: ", GetConfigOutput)
+
+	var identity string = gjson.Get(GetOutput, "identity.principalId").String()
+	log.Println("[INFO] Identity principal: ", identity)
+
+	alwaysOnBool := gjson.Get(GetConfigOutput, "alwaysOn").Bool()
+	alwaysOn := strconv.FormatBool(alwaysOnBool)
+	log.Println("[INFO] always on: ", alwaysOn)
+
+	http2Bool := gjson.Get(GetConfigOutput, "http20Enabled").Bool()
+	http2 := strconv.FormatBool(http2Bool)
+	log.Println("[INFO] http2: ", http2)
+
+	d.Set("slot_name", slotname)
+	d.Set("resource_group_name", resourceGroupName)
+	d.Set("function_app_name", functionAppName)
+	d.Set("identity", identity)
+	d.Set("http_20_enabled", http2)
+	d.Set("always_on", alwaysOn)
+
 	return nil
 }
 func resourceFunctionAppSlotUpdate(d *schema.ResourceData, m interface{}) error {
-	return resourceFunctionAppSlotRead(d, m)
+	c := m.(*Client)
+	log.Println("Entering update command")
 
+	slotname := d.Get("slot_name").(string)
+	resourceGroupName := d.Get("resource_group_name").(string)
+	functionAppName := d.Get("function_app_name").(string)
+	http20Enabled := d.Get("http_20_enabled").(string)
+	alwaysOn := d.Get("always_on").(string)
+
+	if d.HasChange("always_on") {
+		alwaysOnCmd := []string{
+			"functionapp", "config", "set",
+			"--always-on", alwaysOn,
+			"--name", functionAppName,
+			"--slot", slotname,
+			"--resource-group", resourceGroupName,
+			"-o", "json",
+		}
+		alwaysOnOutput := c.AZCommand(alwaysOnCmd)
+
+		alwaysOnR, alwaysOnErr := ParseAzCliOutput(alwaysOnOutput)
+
+		if alwaysOnErr != nil {
+			return alwaysOnErr
+		}
+		if alwaysOnR.AlreadyExists {
+			log.Println("[INFO] Slot exists, updating always on")
+		}
+		d.Set("always_on", alwaysOn)
+	}
+
+	if d.HasChange("http_20_enabled") {
+		http2Cmd := []string{
+			"functionapp", "config", "set",
+			"--http20-enabled", http20Enabled,
+			"--name", functionAppName,
+			"--slot", slotname,
+			"--resource-group", resourceGroupName,
+			"-o", "json",
+		}
+
+		httpOutput := c.AZCommand(http2Cmd)
+
+		http2R, http2Err := ParseAzCliOutput(httpOutput)
+
+		if http2Err != nil {
+			return http2Err
+		}
+		if http2R.AlreadyExists {
+			log.Println("[INFO] Slot exists, updating always on")
+		}
+		d.Set("http_20_enabled", http20Enabled)
+	}
+
+	return resourceFunctionAppSlotRead(d, m)
 }
 
 func resourceFunctionAppSlotDelete(d *schema.ResourceData, m interface{}) error {
+	c := m.(*Client)
+
+	slotname := d.Get("slot_name").(string)
+	resourceGroupName := d.Get("resource_group_name").(string)
+	functionAppName := d.Get("function_app_name").(string)
+	deleteCmd := []string{
+		"functionapp", "deployment", "slot", "delete",
+		"--name", functionAppName,
+		"--slot", slotname,
+		"--resource-group", resourceGroupName,
+		"-o", "json",
+	}
+	deleteOutput := c.AZCommand(deleteCmd)
+
+	deleteR, deleteErr := ParseAzCliOutput(deleteOutput)
+
+	if deleteErr != nil {
+		return deleteErr
+	}
+
+	if !deleteR.Found || deleteR.CliResponse == "" {
+		log.Println("[INFO] Slot deleted ok")
+		d.SetId("")
+	}
 	return nil
 }

@@ -209,27 +209,27 @@ The below example will create two slots
 ```terraform
 
 provider "azcli" {
-  subscription_name = "Clarksons - Development - R&D"
+  subscription_name = "MyAzureSubscription"
   version = "=0.0.6"
 }
 
 
 locals {
-  resource_group_name = "ctrrg000008"
+  resource_group_name = "myrg"
 
 }
 
 resource "azcli_functionapp_slot" "slot1" {
   slot_name = "slot1"
-  resource_group_name = "ctrrg000008"
+  resource_group_name = "myrg"
   function_app_name = "mrdtestapp"
   http_20_enabled = "true"
   always_on = "true"
 }
 resource "azcli_functionapp_slot" "slot2" {
   slot_name = "slot2"
-  resource_group_name = "ctrrg000008"
-  function_app_name = "mrdtestapp"
+  resource_group_name = "myrg"
+  function_app_name = "myapp"
   http_20_enabled = "true"
   always_on = "false"
 }
